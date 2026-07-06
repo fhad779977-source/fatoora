@@ -1,0 +1,8 @@
+name = "fatoora"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fatoora-db"
+database_id = "003ba78d-69b8-4fab-88c7-691634f86ac9"
