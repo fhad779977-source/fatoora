@@ -1,0 +1,55 @@
+import { createElement } from "react";
+import {
+  Info,
+  Lightbulb,
+  ShieldCheck,
+  Target,
+  TrendingUp,
+  Award,
+  Clock,
+  Wallet,
+  Building2,
+  Sparkles,
+  Users,
+  Mail,
+  Phone,
+  CircleCheck,
+  Calendar,
+  Layers,
+  Zap,
+  Globe,
+  TriangleAlert,
+  Landmark,
+  Rocket,
+  Gem,
+  type LucideIcon,
+} from "lucide-react";
+
+export const CARD_ICONS: Record<string, LucideIcon> = {
+  Info,
+  Lightbulb,
+  ShieldCheck,
+  Target,
+  TrendingUp,
+  Award,
+  Clock,
+  Wallet,
+  Building2,
+  Sparkles,
+  Users,
+  Mail,
+  Phone,
+  CircleCheck,
+  Calendar,
+  Layers,
+  Zap,
+  Globe,
+  TriangleAlert,
+  Landmark,
+  Rocket,
+  Gem,
+};
+
+export function CardIcon({ name, className }: { name: string; className?: string }) {
+  return createElement(CARD_ICONS[name] ?? Info, { className });
+}
