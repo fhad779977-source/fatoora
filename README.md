@@ -49,3 +49,12 @@ src/
 
 ### التصدير إلى PDF
 يُرسم المستند خارج الشاشة بنفس مكوّن المعاينة (وضع `export`)، ثم يُلتقط بالمتصفح نفسه (فيبقى تشكيل العربية واتجاهها سليمًا)، ويُقسَّم إلى صفحات عند الفواصل بين العناصر مع إبقاء العناوين مع ما بعدها. الأحجام: A4، عرض تقديمي 16:9، مستند طويل بصفحة واحدة.
+
+## النشر على Cloudflare Workers
+
+يُبنى التطبيق بمحوّل OpenNext (`@opennextjs/cloudflare`) والإعدادات في `wrangler.jsonc` و `open-next.config.ts`.
+
+```bash
+npm run preview   # بناء وتشغيل محلي داخل بيئة Workers
+npm run deploy    # بناء ونشر (يتطلب CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID)
+```
