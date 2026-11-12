@@ -75,8 +75,8 @@ try {
   step('wrangler dev --local يعمل');
 
   // مسار ليس لمضمون يرجع null → يمرّ لفاتورة.
-  assert.equal((await http('/')).status, 404);
-  assert.match((await http('/')).text, /not a madmoun route/);
+  assert.equal((await http('/invoices')).status, 404);
+  assert.match((await http('/invoices')).text, /not a madmoun route/);
   step('المسارات غير التابعة لمضمون لا تتأثر (handleMadmoun يعيد null)');
 
   // بدون دخول → تحويل لصفحة الدخول.

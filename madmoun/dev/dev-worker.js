@@ -11,6 +11,8 @@ function devMerchant(request) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // للتجربة اليدوية: الصفحة الرئيسية تدخل مباشرة كتاجر تجريبي.
+    if (url.pathname === '/') return Response.redirect(url.origin + '/login?m=m-test-1', 303);
     if (url.pathname === '/login') {
       const id = url.searchParams.get('m');
       if (!id) return new Response('dev login: /login?m=<merchant_id>', { status: 401 });
