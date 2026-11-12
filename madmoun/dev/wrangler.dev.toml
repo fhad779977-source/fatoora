@@ -1,0 +1,14 @@
+# «مضمون» — إعداد محلي فقط للتجربة (لا يُستخدم للنشر).
+# الاستخدام: npx wrangler dev -c madmoun/dev/wrangler.dev.toml --local
+name = "fatoora-madmoun-dev"
+main = "dev-worker.js"
+compatibility_date = "2025-01-01"
+
+[triggers]
+crons = ["0 6 * * *"]   # يوميًا 9 صباحًا بتوقيت الرياض
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fatoora-madmoun-dev"
+database_id = "00000000-0000-0000-0000-00000000dev0"
+migrations_dir = "../migrations"
