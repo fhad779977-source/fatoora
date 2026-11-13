@@ -4,6 +4,10 @@ name = "fatoora-madmoun-dev"
 main = "dev-worker.js"
 compatibility_date = "2025-01-01"
 
+# معرّف المشرف التجريبي (صاحب المنصة) للدخول إلى /madmoun/admin محليًا.
+[vars]
+MADMOUN_ADMIN_IDS = "admin-fahad"
+
 [triggers]
 crons = ["0 6 * * *"]   # يوميًا 9 صباحًا بتوقيت الرياض
 

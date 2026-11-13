@@ -13,15 +13,16 @@
 import { defaultAdapter, invoiceSnapshot } from './adapter.js';
 import { TEMPLATES, PLEDGE_TYPES, fillTemplate } from './templates.js';
 import { merchantVerificationSummary, INTEGRATION_STATUS } from './integrations.js';
-import { page, html, esc, formatDate, DISCLAIMER } from './ui.js';
+import { page, html, esc, formatDate, DISCLAIMER, CLAIM_STATUS, verifyBadge, snapshotView, durationText } from './ui.js';
 import {
   createPledge, addAmendment, createClaim, respondToClaim, getPledgeByToken, getPledgeForMerchant,
   listClaims, listMerchantPledges, listMerchantClaims, countRecentClaims, fullVerify,
   collectExpiringPledges, audit, addDays, nowIso,
 } from './store.js';
+import { adminRoutes } from './admin.js';
+import { printPage } from './print.js';
 
 const LIMITS = { product: 200, text: 4000, amendment: 2000, claim: 2000, response: 2000, maxDays: 3650 };
-const CLAIM_STATUS = { open: 'مفتوحة', accepted: 'مقبولة', rejected: 'مرفوضة', resolved: 'تم حلّها' };
 const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/;
 
 export async function handleMadmoun(request, env, ctx, options = {}) {
@@ -31,7 +32,7 @@ export async function handleMadmoun(request, env, ctx, options = {}) {
 
   const adapter = { ...defaultAdapter, ...options };
   try {
-    if (path.startsWith('/m/')) return await customerRoutes(request, env, url, path);
+    if (path.startsWith('/m/')) return await customerRoutes(request, env, url, path, adapter);
     return await merchantRoutes(request, env, url, path, adapter);
   } catch (err) {
     console.error('madmoun error', err && err.stack ? err.stack : err);
@@ -92,30 +93,9 @@ function merchantIdOf(m) {
   return String(m);
 }
 
-function verifyBadge(v) {
-  return v.ok
-    ? '<span class="mm-badge ok">✓ موثّق ولم يُعدّل</span>'
-    : '<span class="mm-badge bad">✗ فشل التحقق — قد يكون السجل تعرّض للتلاعب</span>';
-}
-
-function snapshotView(snapshotJson) {
-  let s = {};
-  try { s = JSON.parse(snapshotJson); } catch { /* يبقى فارغًا */ }
-  return `<dl>
-    <dt>رقم الفاتورة</dt><dd>${esc(s.number ?? s.id ?? '—')}</dd>
-    <dt>الإجمالي</dt><dd>${esc(s.total ?? '—')}</dd>
-    <dt>تاريخ الفاتورة</dt><dd>${esc(s.date ? formatDate(s.date) : '—')}</dd>
-  </dl>`;
-}
-
-function durationText(p) {
-  if (p.duration_days == null) return 'بدون مدة محددة';
-  return `${esc(p.duration_days)} يومًا — تنتهي في ${esc(formatDate(p.expires_at))}`;
-}
-
 // ---------------------------------------------------------------- صفحات العميل
 
-async function customerRoutes(request, env, url, path) {
+async function customerRoutes(request, env, url, path, adapter) {
   const parts = path.split('/').filter(Boolean); // ['m', token, ...]
   const token = parts[1];
   if (!token || !TOKEN_RE.test(token)) return notFound();
@@ -141,6 +121,17 @@ async function customerRoutes(request, env, url, path) {
       disclaimer: DISCLAIMER,
       checked_at: nowIso(),
     }, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+
+  // شهادة التعهد للطباعة / الحفظ PDF.
+  if (parts.length === 3 && parts[2] === 'print' && request.method === 'GET') {
+    const v = await fullVerify(env, pledge);
+    const merchantName = await adapter.getMerchantName(env, pledge.merchant_id).catch(() => null);
+    return html(printPage({
+      pledge, verification: v, merchantName,
+      verifyUrl: `${url.origin}/m/${pledge.public_token}/verify.json`,
+      pageUrl: `/m/${pledge.public_token}`,
+    }));
   }
 
   if (parts.length === 3 && parts[2] === 'claim' && request.method === 'POST') {
@@ -200,6 +191,7 @@ async function customerPage(env, pledge, url, error = null) {
     <p class="mm-muted">بصمة SHA-256 لمحتوى التعهد مربوطة ببصمة التعهد السابق للتاجر نفسه. أي تغيير في حرف واحد يكسرها.</p>
     <p class="mm-hash">${esc(pledge.content_hash)}</p>
     <p><a href="/m/${esc(pledge.public_token)}/verify.json">عرض بيانات التحقق (JSON)</a></p>
+    <p><a class="mm-btn mm-ghost" href="/m/${esc(pledge.public_token)}/print">تحميل شهادة التعهد (PDF)</a></p>
   </div>
   <div class="mm-disclaimer">${esc(DISCLAIMER)}</div>`;
   return html(page({ title: pledge.product_name, body }), error ? 400 : 200);
@@ -208,6 +200,16 @@ async function customerPage(env, pledge, url, error = null) {
 // ---------------------------------------------------------------- صفحات التاجر
 
 async function merchantRoutes(request, env, url, path, adapter) {
+  // لوحة المشرف: قبل فحص التاجر، لأن المشرف قد لا يكون تاجرًا.
+  if (path === '/madmoun/admin' || path.startsWith('/madmoun/admin/')) {
+    if (!(await adapter.isAdmin(request, env))) {
+      const user = await adapter.getMerchant(request, env);
+      if (!user && request.method === 'GET') return redirect(`${adapter.loginUrl}?next=${encodeURIComponent(url.pathname + url.search)}`);
+      return forbidden();
+    }
+    return (await adminRoutes(request, env, url, path, adapter)) || notFound();
+  }
+
   const merchantId = merchantIdOf(await adapter.getMerchant(request, env));
   if (!merchantId) {
     if (request.method === 'GET') return redirect(`${adapter.loginUrl}?next=${encodeURIComponent(url.pathname + url.search)}`);
@@ -438,6 +440,7 @@ async function merchantPledgePage(env, merchantId, id, url, error = null) {
     <div class="mm-pledge-text">${esc(pledge.pledge_text)}</div>
     <label for="mm-link">رابط العميل</label>
     <input id="mm-link" readonly value="${esc(customerLink)}" dir="ltr" onclick="this.select()">
+    <div class="mm-actions"><a class="mm-btn" href="/m/${esc(pledge.public_token)}/print">تحميل التعهد PDF</a></div>
     <p class="mm-hash">${esc(pledge.content_hash)}</p>
   </div>
   <div class="mm-card"><h2>الفاتورة المرتبطة</h2>${snapshotView(pledge.invoice_snapshot)}</div>

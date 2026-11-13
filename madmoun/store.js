@@ -233,3 +233,63 @@ export async function collectExpiringPledges(env, { withinDays = 7, now = new Da
   await audit(env, { actorType: 'system', action: 'reminder.scan', details: { window_days: withinDays, found: rows.length } });
   return rows;
 }
+
+// ---------------------------------------------------------------- استعلامات المشرف (قراءة فقط)
+
+export async function adminSummary(env, now = new Date()) {
+  const nowIsoStr = now.toISOString();
+  const staleBefore = addDays(nowIsoStr, -3);
+  const soon = addDays(nowIsoStr, 7);
+  const one = async (sql, ...params) => Number((await env.DB.prepare(sql).bind(...params).first())?.n || 0);
+  const [merchants, pledges, openClaims, staleClaims, totalClaims, expiring] = await Promise.all([
+    one('SELECT COUNT(DISTINCT merchant_id) AS n FROM pledges'),
+    one('SELECT COUNT(*) AS n FROM pledges'),
+    one("SELECT COUNT(*) AS n FROM claims WHERE status = 'open'"),
+    one("SELECT COUNT(*) AS n FROM claims WHERE status = 'open' AND created_at < ?", staleBefore),
+    one('SELECT COUNT(*) AS n FROM claims'),
+    one('SELECT COUNT(*) AS n FROM pledges WHERE expires_at IS NOT NULL AND expires_at > ? AND expires_at <= ?', nowIsoStr, soon),
+  ]);
+  return { merchants, pledges, openClaims, staleClaims, totalClaims, expiring };
+}
+
+export async function adminListClaims(env, { status = 'open', merchantId = null, limit = 200 } = {}) {
+  const where = [];
+  const params = [];
+  if (status && status !== 'all') { where.push('c.status = ?'); params.push(status); }
+  if (merchantId) { where.push('c.merchant_id = ?'); params.push(String(merchantId)); }
+  const { results } = await env.DB.prepare(
+    `SELECT c.*, p.product_name, p.seq, p.pledge_type FROM claims c JOIN pledges p ON p.id = c.pledge_id
+     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+     ORDER BY (c.status = 'open') DESC, c.created_at ASC LIMIT ?`
+  ).bind(...params, limit).all();
+  return results || [];
+}
+
+export async function adminListMerchants(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT p.merchant_id,
+       COUNT(*) AS pledges_total,
+       MAX(p.created_at) AS last_pledge_at,
+       (SELECT COUNT(*) FROM claims c WHERE c.merchant_id = p.merchant_id) AS claims_total,
+       (SELECT COUNT(*) FROM claims c WHERE c.merchant_id = p.merchant_id AND c.status = 'open') AS claims_open
+     FROM pledges p GROUP BY p.merchant_id ORDER BY claims_open DESC, last_pledge_at DESC LIMIT 500`
+  ).all();
+  return results || [];
+}
+
+export async function adminRecentAudit(env, limit = 30) {
+  const { results } = await env.DB.prepare('SELECT * FROM madmoun_audit ORDER BY id DESC LIMIT ?').bind(limit).all();
+  return results || [];
+}
+
+export async function auditForPledge(env, pledgeId) {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM madmoun_audit
+     WHERE (entity_type = 'pledge' AND entity_id = ?)
+        OR (entity_type = 'claim' AND entity_id IN (SELECT CAST(id AS TEXT) FROM claims WHERE pledge_id = ?))
+     ORDER BY id`
+  ).bind(String(pledgeId), pledgeId).all();
+  return results || [];
+}
+
+export const getPledgeById = (env, id) => env.DB.prepare('SELECT * FROM pledges WHERE id = ?').bind(id).first();

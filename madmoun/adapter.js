@@ -41,6 +41,17 @@ export const defaultAdapter = {
 
   // رابط صفحة الدخول الحالية في فاتورة (لتحويل غير المسجّلين إليها).
   loginUrl: '/login',
+
+  // هل المستخدم الحالي مشرف المنصة (صفحة /madmoun/admin)؟
+  // الافتراضي: معرّفه موجود في المتغيّر MADMOUN_ADMIN_IDS (قائمة مفصولة بفواصل).
+  // بدون المتغيّر لا يوجد مشرف، فتبقى الصفحة مغلقة. يمكن استبدالها بنظام صلاحيات فاتورة إن وُجد.
+  async isAdmin(request, env) {
+    const allowed = String(env.MADMOUN_ADMIN_IDS || '').split(',').map((x) => x.trim()).filter(Boolean);
+    if (!allowed.length) return false;
+    const user = await this.getMerchant(request, env);
+    const id = user == null ? null : String(typeof user === 'object' ? user.id : user);
+    return id != null && allowed.includes(id);
+  },
 };
 
 // اللقطة المحفوظة من الفاتورة داخل التعهد (تدخل في البصمة).

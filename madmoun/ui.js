@@ -2,6 +2,8 @@
 // الألوان والخط في متغيّرات CSS أعلى الملف حتى تُطابَق مع ستايل فاتورة الحالي
 // بتعديل هذه القيم فقط (ملف التصميم الأصلي لفاتورة غير موجود في المستودع).
 
+import { PLEDGE_TYPES } from './templates.js';
+
 export const DISCLAIMER = 'مضمون يوثّق تعهّد التاجر، ولا يفحص المنتج ولا يضمنه.';
 
 export function esc(value) {
@@ -61,12 +63,27 @@ table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px s
 .mm-success{background:var(--mm-ok-bg);color:var(--mm-ok);padding:10px;border-radius:8px;margin-bottom:12px}
 dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0} dt{color:var(--mm-muted)} dd{margin:0}
 @media (max-width:560px){ dl{grid-template-columns:1fr} th,td{font-size:14px} }
+main.mm-wide{max-width:1100px}
+.mm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.mm-stat{background:var(--mm-card);border:1px solid var(--mm-border);border-radius:var(--mm-radius);padding:12px 14px}
+.mm-stat b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.mm-stat span{color:var(--mm-muted);font-size:14px}
+.mm-stat.alert{border-color:var(--mm-bad);background:var(--mm-bad-bg)} .mm-stat.alert b{color:var(--mm-bad)}
+.mm-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.mm-tabs a{padding:6px 12px;border-radius:999px;border:1px solid var(--mm-border);text-decoration:none;color:var(--mm-text);font-size:14px}
+.mm-tabs a.on{background:var(--mm-primary);border-color:var(--mm-primary);color:#fff;font-weight:700}
+.mm-scroll{overflow-x:auto}
+.mm-age{font-variant-numeric:tabular-nums;white-space:nowrap}
+.mm-age.late{color:var(--mm-bad);font-weight:700}
+.mm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 `;
 
-export function page({ title, body, merchant = false }) {
-  const nav = merchant
-    ? '<nav><a href="/madmoun">تعهداتي</a> · <a href="/madmoun/new">تعهد جديد</a></nav>'
-    : '';
+export function page({ title, body, merchant = false, admin = false }) {
+  const nav = admin
+    ? '<nav><a href="/madmoun/admin">لوحة المشرف</a></nav>'
+    : merchant
+      ? '<nav><a href="/madmoun">تعهداتي</a> · <a href="/madmoun/new">تعهد جديد</a></nav>'
+      : '';
   return `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -77,8 +94,8 @@ export function page({ title, body, merchant = false }) {
 <style>${CSS}</style>
 </head>
 <body>
-<header class="mm-top"><div class="mm-wrap"><a class="mm-brand" href="${merchant ? '/madmoun' : '#'}">مضمون</a>${nav}</div></header>
-<main class="mm-wrap">${body}</main>
+<header class="mm-top"><div class="mm-wrap"><a class="mm-brand" href="${admin ? '/madmoun/admin' : merchant ? '/madmoun' : '#'}">مضمون${admin ? ' · المشرف' : ''}</a>${nav}</div></header>
+<main class="mm-wrap${admin ? ' mm-wide' : ''}">${body}</main>
 </body>
 </html>`;
 }
@@ -95,3 +112,29 @@ export function html(body, status = 200, extraHeaders = {}) {
     },
   });
 }
+
+// ---------------------------------------------------------------- أجزاء مشتركة بين الصفحات
+
+export const CLAIM_STATUS = { open: 'مفتوحة', accepted: 'مقبولة', rejected: 'مرفوضة', resolved: 'تم حلّها' };
+
+export function verifyBadge(v) {
+  return v.ok
+    ? '<span class="mm-badge ok">✓ موثّق ولم يُعدّل</span>'
+    : '<span class="mm-badge bad">✗ فشل التحقق — قد يكون السجل تعرّض للتلاعب</span>';
+}
+
+export function snapshotView(snapshotJson) {
+  let s = {};
+  try { s = JSON.parse(snapshotJson); } catch { /* يبقى فارغًا */ }
+  return `<dl>
+    <dt>رقم الفاتورة</dt><dd>${esc(s.number ?? s.id ?? '—')}</dd>
+    <dt>الإجمالي</dt><dd>${esc(s.total ?? '—')}</dd>
+    <dt>تاريخ الفاتورة</dt><dd>${esc(s.date ? formatDate(s.date) : '—')}</dd>
+  </dl>`;
+}
+
+export function durationText(p) {
+  if (p.duration_days == null) return 'بدون مدة محددة';
+  return `${esc(p.duration_days)} يومًا — تنتهي في ${esc(formatDate(p.expires_at))}`;
+}
+

@@ -151,6 +151,29 @@ try {
   assert.equal(resp.status, 303);
   step('العميل يقدّم مطالبة، والتاجر يراها في قائمته ويرد عليها');
 
+  // لوحة المشرف.
+  const adminCookie = 'mm_dev_merchant=admin-fahad';
+  assert.equal((await http('/madmoun/admin')).status, 303, 'غير مسجّل → الدخول');
+  assert.equal((await http('/madmoun/admin', { cookie })).status, 403, 'التاجر العادي ممنوع');
+  let adm = await http('/madmoun/admin?status=all', { cookie: adminCookie });
+  assert.equal(adm.status, 200);
+  assert.ok(adm.text.includes('شكاوى العملاء') && adm.text.includes('وجدت العسل') && adm.text.includes('متجر الاختبار'));
+  assert.ok(adm.text.includes('✓ سليمة'));
+  const admDetail = await http(`/madmoun/admin/p/${pledgeId}`, { cookie: adminCookie });
+  assert.equal(admDetail.status, 200);
+  assert.ok(admDetail.text.includes('+9665•••••567') && !admDetail.text.includes('+966501234567'), 'جوال العميل مخفي جزئيًا للمشرف');
+  assert.ok(admDetail.text.includes('سجل التدقيق لهذا التعهد'));
+  assert.equal((await http(`/madmoun/admin/p/${pledgeId}`, { method: 'POST', cookie: adminCookie })).status, 404, 'لوحة المشرف قراءة فقط');
+  step('لوحة المشرف: للمشرف فقط، تعرض الشكاوى والتجار وسلامة السلاسل، قراءة فقط، والجوال مخفي جزئيًا');
+
+  const printed = await http(`/m/${token}/print`);
+  assert.equal(printed.status, 200);
+  assert.ok(printed.text.includes('شهادة توثيق تعهّد تاجر') && printed.text.includes(rows[0].content_hash)
+    && printed.text.includes('مضمون يوثّق تعهّد التاجر') && printed.text.includes('window.print()') && printed.text.includes('متجر الاختبار'));
+  assert.ok(!printed.text.includes('501234567'), 'الشهادة لا تعرض جوال العميل');
+  assert.ok((await http(`/madmoun/p/${pledgeId}`, { cookie })).text.includes(`/m/${token}/print`));
+  step('شهادة التعهد PDF: فيها البصمة واسم التاجر والتنبيه، بدون جوال العميل، ورابطها في صفحة التاجر');
+
   const amend = await http(`/madmoun/p/${pledgeId}/amend`, { method: 'POST', cookie, form: { amendment_text: 'تمديد المدة ٣٠ يومًا إضافية' } });
   assert.equal(amend.status, 303);
   cust = await http(`/m/${token}`);
@@ -195,7 +218,9 @@ try {
   assert.ok(cust.text.includes('فشل التحقق') && !cust.text.includes('موثّق ولم يُعدّل'));
   let vj = JSON.parse((await http(`/m/${token}/verify.json`)).text);
   assert.equal(vj.verified, false); assert.equal(vj.checks.content_hash, false);
-  step('تغيير حرف واحد في نص التعهد مباشرة في القاعدة يكسر التحقق (الشارة تتحول لفشل)');
+  assert.ok((await http('/madmoun/admin', { cookie: 'mm_dev_merchant=admin-fahad' })).text.includes('✗ مكسورة عند التعهد 1'));
+  assert.ok((await http(`/m/${token}/print`)).text.includes('فشل التحقق'));
+  step('تغيير حرف واحد في نص التعهد مباشرة في القاعدة يكسر التحقق (الشارة والشهادة ولوحة المشرف تكشفه)');
 
   // مهاجم أذكى: يعيد حساب البصمة أيضًا → السلسلة تكشفه عبر التعهد التالي.
   const { hashPledge } = await import('../hash.js');
