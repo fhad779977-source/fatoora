@@ -193,8 +193,8 @@ async function customerPage(env, pledge, url, error = null) {
     <p><a href="/m/${esc(pledge.public_token)}/verify.json">عرض بيانات التحقق (JSON)</a></p>
     <p><a class="mm-btn mm-ghost" href="/m/${esc(pledge.public_token)}/print">تحميل شهادة التعهد (PDF)</a></p>
   </div>
-  <div class="mm-disclaimer">${esc(DISCLAIMER)}</div>`;
-  return html(page({ title: pledge.product_name, body }), error ? 400 : 200);
+  <div class="mm-disclaimer mm-foot">${esc(DISCLAIMER)}</div>`;
+  return html(page({ title: pledge.product_name, body, hero: { ok: v.ok } }), error ? 400 : 200);
 }
 
 // ---------------------------------------------------------------- صفحات التاجر
@@ -266,13 +266,13 @@ async function dashboard(env, merchantId, adapter) {
       <td>${esc(PLEDGE_TYPES[p.pledge_type] || p.pledge_type)}</td>
       <td>${esc(formatDate(p.created_at))}</td>
       <td>${p.expires_at ? esc(formatDate(p.expires_at)) : '—'}</td>
-      <td>${Number(p.claims_open) ? `<span class="mm-badge bad">${esc(p.claims_open)} مفتوحة</span>` : esc(p.claims_total)}</td>
+      <td>${Number(p.claims_open) ? `<span class="mm-badge pending">${esc(p.claims_open)} مفتوحة</span>` : esc(p.claims_total)}</td>
     </tr>`).join('');
   const claimRows = claims.map((c) => `<tr>
       <td><a href="/madmoun/p/${esc(c.pledge_id)}">${esc(c.product_name)}</a></td>
       <td>${esc(c.claim_text.slice(0, 80))}${c.claim_text.length > 80 ? '…' : ''}</td>
       <td>${esc(formatDate(c.created_at))}</td>
-      <td><span class="mm-badge ${c.status === 'open' ? 'bad' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span></td>
+      <td><span class="mm-badge ${c.status === 'open' ? 'pending' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span></td>
     </tr>`).join('');
   const body = `
   <div class="mm-card">
@@ -411,7 +411,7 @@ async function merchantPledgePage(env, merchantId, id, url, error = null) {
 
   const claimsHtml = claims.length ? claims.map((c) => `
     <div class="mm-card">
-      <p><span class="mm-badge ${c.status === 'open' ? 'bad' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span>
+      <p><span class="mm-badge ${c.status === 'open' ? 'pending' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span>
          <span class="mm-muted">${esc(formatDate(c.created_at))}${c.customer_phone ? ' — جوال: <span dir="ltr">' + esc(c.customer_phone) + '</span>' : ''}</span></p>
       <div class="mm-pledge-text">${esc(c.claim_text)}</div>
       ${c.merchant_response ? `<p><strong>ردّك:</strong> ${esc(c.merchant_response)}</p>` : ''}

@@ -91,14 +91,14 @@ async function overview(env, url, adapter) {
       <td><a href="/madmoun/admin/p/${esc(c.pledge_id)}">${esc(c.product_name)}</a><div class="mm-muted">${esc(PLEDGE_TYPES[c.pledge_type] || '')}</div></td>
       <td>${esc(c.claim_text.slice(0, 120))}${c.claim_text.length > 120 ? '…' : ''}
           ${c.merchant_response ? `<div class="mm-muted">رد التاجر: ${esc(c.merchant_response.slice(0, 80))}</div>` : ''}</td>
-      <td><span class="mm-badge ${c.status === 'open' ? 'bad' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span></td>
+      <td><span class="mm-badge ${c.status === 'open' ? 'pending' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span></td>
     </tr>`).join('');
 
   const merchantRows = merchants.map((mm, i) => `<tr>
       <td><a href="${esc(qs({ status: 'all', merchant: mm.merchant_id }))}">${esc(names.get(mm.merchant_id))}</a><div class="mm-muted" dir="ltr">${esc(mm.merchant_id)}</div></td>
       <td>${esc(mm.pledges_total)}</td>
       <td>${esc(formatDate(mm.last_pledge_at))}</td>
-      <td>${Number(mm.claims_open) ? `<span class="mm-badge bad">${esc(mm.claims_open)} مفتوحة</span>` : '0 مفتوحة'} <span class="mm-muted">من ${esc(mm.claims_total)}</span></td>
+      <td>${Number(mm.claims_open) ? `<span class="mm-badge pending">${esc(mm.claims_open)} مفتوحة</span>` : '0 مفتوحة'} <span class="mm-muted">من ${esc(mm.claims_total)}</span></td>
       <td>${chains[i].ok ? '<span class="mm-badge ok">✓ سليمة</span>' : `<span class="mm-badge bad">✗ مكسورة عند التعهد ${esc(chains[i].brokenAtSeq)}</span>`}</td>
     </tr>`).join('');
 
@@ -153,7 +153,7 @@ async function pledgeDetail(env, id, adapter) {
 
   const claimsHtml = claims.length ? claims.map((c) => `
     <div class="mm-card">
-      <p><span class="mm-badge ${c.status === 'open' ? 'bad' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span>
+      <p><span class="mm-badge ${c.status === 'open' ? 'pending' : 'neutral'}">${esc(CLAIM_STATUS[c.status] || c.status)}</span>
         ${ageCell(c)} <span class="mm-muted">— ${esc(formatDate(c.created_at))} — جوال العميل: <span dir="ltr">${esc(maskPhone(c.customer_phone))}</span></span></p>
       <div class="mm-pledge-text">${esc(c.claim_text)}</div>
       ${c.merchant_response ? `<p><strong>رد التاجر (${esc(formatDate(c.responded_at))}):</strong> ${esc(c.merchant_response)}</p>` : '<p class="mm-muted">لم يرد التاجر بعد.</p>'}
