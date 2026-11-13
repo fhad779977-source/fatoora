@@ -161,7 +161,6 @@ async function customerPage(env, pledge, url, error = null) {
   <div class="mm-disclaimer">${esc(DISCLAIMER)}</div>
   ${claimed ? '<div class="mm-success">تم تسجيل مطالبتك وإبلاغ التاجر بها داخل مضمون.</div>' : ''}
   <div class="mm-card">
-    <p>${verifyBadge(v)}</p>
     <h1>${esc(pledge.product_name)}</h1>
     <dl>
       <dt>نوع التعهد</dt><dd>${esc(PLEDGE_TYPES[pledge.pledge_type] || pledge.pledge_type)}</dd>
@@ -193,7 +192,7 @@ async function customerPage(env, pledge, url, error = null) {
     <p><a href="/m/${esc(pledge.public_token)}/verify.json">عرض بيانات التحقق (JSON)</a></p>
     <p><a class="mm-btn mm-ghost" href="/m/${esc(pledge.public_token)}/print">تحميل شهادة التعهد (PDF)</a></p>
   </div>
-  <div class="mm-disclaimer mm-foot">${esc(DISCLAIMER)}</div>`;
+  ${v.ok ? '<p class="mm-seal-line">تعهّد موثّق. حق محفوظ.</p>' : ''}`;
   return html(page({ title: pledge.product_name, body, hero: { ok: v.ok } }), error ? 400 : 200);
 }
 

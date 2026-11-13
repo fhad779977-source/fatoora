@@ -134,13 +134,13 @@ try {
 
   let cust = await http(`/m/${token}`);
   assert.equal(cust.status, 200);
-  assert.ok(cust.text.includes('موثّق ولم يُعدّل'));
+  assert.ok(cust.text.includes('تعهّد موثّق ✓') && cust.text.includes('تعهّد موثّق. حق محفوظ.') && !cust.text.includes('موثّق ولم يُعدّل'));
   assert.ok(cust.text.includes('مضمون يوثّق تعهّد التاجر، ولا يفحص المنتج ولا يضمنه'));
   assert.ok(cust.text.includes('INV-1001'));
   assert.ok(cust.text.includes('تقديم مطالبة'));
   assert.ok(!cust.text.includes('501234567'), 'جوال العميل لا يظهر في الصفحة العامة');
   assert.equal((await http('/m/AAAAAAAAAAAAAAAAAAAAAA')).status, 404);
-  step('صفحة العميل: التعهد + الفاتورة + شارة «موثّق ولم يُعدّل» + التنبيه + زر المطالبة، بدون جوال العميل');
+  step('صفحة العميل: التعهد + الفاتورة + رأس «تعهّد موثّق ✓» + التنبيه + زر المطالبة، بدون جوال العميل');
 
   const claim = await http(`/m/${token}/claim`, { method: 'POST', form: { claim_text: 'وجدت العسل متبلّرًا بشكل غريب', customer_phone: '' } });
   assert.equal(claim.status, 303);
@@ -177,7 +177,7 @@ try {
   const amend = await http(`/madmoun/p/${pledgeId}/amend`, { method: 'POST', cookie, form: { amendment_text: 'تمديد المدة ٣٠ يومًا إضافية' } });
   assert.equal(amend.status, 303);
   cust = await http(`/m/${token}`);
-  assert.ok(cust.text.includes('تمديد المدة') && cust.text.includes(pledgeText) && cust.text.includes('موثّق ولم يُعدّل'));
+  assert.ok(cust.text.includes('تمديد المدة') && cust.text.includes(pledgeText) && cust.text.includes('تعهّد موثّق ✓'));
   step('إضافة تعديل يظهر للعميل مع بقاء الأصل كما هو');
 
   // منع UPDATE/DELETE على مستوى القاعدة.
@@ -215,7 +215,7 @@ try {
   sql(`DROP TRIGGER pledges_no_update; UPDATE pledges SET pledge_text = replace(pledge_text, '١٠٠٪', '٩٩٪') WHERE id = ${pledgeId}`);
   await startServer();
   cust = await http(`/m/${token}`);
-  assert.ok(cust.text.includes('فشل التحقق') && !cust.text.includes('موثّق ولم يُعدّل'));
+  assert.ok(cust.text.includes('تم التلاعب بهذا التعهد') && !cust.text.includes('تعهّد موثّق'));
   let vj = JSON.parse((await http(`/m/${token}/verify.json`)).text);
   assert.equal(vj.verified, false); assert.equal(vj.checks.content_hash, false);
   assert.ok((await http('/madmoun/admin', { cookie: 'mm_dev_merchant=admin-fahad' })).text.includes('✗ مكسورة عند التعهد 1'));

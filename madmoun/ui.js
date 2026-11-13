@@ -22,9 +22,10 @@ export function formatDate(iso) {
   }
 }
 
-// خطوط الهوية من Google Fonts: Noto Kufi Arabic للعناوين والأزرار، IBM Plex Sans Arabic للنصوص.
+// خطوط الهوية من Google Fonts: Noto Kufi Arabic للعناوين والأزرار، IBM Plex Sans Arabic للنصوص،
+// و Amiri لسطر «تعهّد موثّق. حق محفوظ.» أسفل صفحة العميل فقط.
 export const FONTS_LINK = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-  + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500&family=Noto+Kufi+Arabic:wght@700;800&display=swap">';
+  + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500&family=Noto+Kufi+Arabic:wght@700;800&display=swap">';
 
 // الختم الرسمي كما هو. inverted = النسخة المعكوسة للخلفية الزمرّدية (ختم عاجي، صح زمرّدي، حلقة ذهبية).
 export function seal({ inverted = false, size = 32, label = '' } = {}) {
@@ -77,7 +78,7 @@ textarea{min-height:120px}
 .mm-btn.mm-ghost:hover{background:var(--mint)}
 .mm-muted{color:var(--muted);font-size:14px}
 .mm-disclaimer{background:var(--mint);color:var(--emerald);border-radius:8px;padding:10px 12px;font-weight:500;margin-bottom:16px}
-.mm-disclaimer.mm-foot{background:transparent;padding:4px 0;margin:8px 0 0;font-size:13px;font-weight:400;color:var(--muted);text-align:center}
+.mm-seal-line{margin:8px 0 0;text-align:center;font-family:'Amiri','Noto Kufi Arabic',serif;font-weight:700;font-size:22px;color:var(--emerald)}
 .mm-badge{display:inline-block;white-space:nowrap;border-radius:999px;padding:3px 12px;font-family:var(--font-head);font-weight:700;font-size:13px}
 .mm-badge.ok{background:var(--emerald);color:var(--ivory)}
 .mm-badge.bad{background:var(--brick-tint);color:var(--brick)}
@@ -97,7 +98,7 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0} dt{
 main.mm-wide{max-width:1100px}
 .mm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
 .mm-stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
-.mm-stat b{display:block;font-family:var(--font-head);font-weight:800;font-size:28px;color:var(--gold);font-variant-numeric:tabular-nums}
+.mm-stat b{display:block;font-family:var(--font-head);font-weight:800;font-size:28px;color:var(--emerald);font-variant-numeric:tabular-nums}
 .mm-stat span{color:var(--muted);font-size:14px}
 .mm-stat.alert{border-color:var(--brick);background:var(--brick-tint)} .mm-stat.alert b{color:var(--brick)}
 .mm-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
